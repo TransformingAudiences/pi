@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <!--<SolutionDir>$(MSBuildThisFileDirectory)</SolutionDir>-->
+    <Configuration Condition="$(Configuration) == ''">Debug</Configuration>
+    
+    <IntermediateOutputPath>$(SolutionDir)\out\obj\$(Configuration)\$(MSBuildProjectName)\</IntermediateOutputPath>
+    <OutputPath>$(SolutionDir)\out\bin\$(Configuration)\</OutputPath>
+    <OutDir>$(OutputPath)</OutDir>
+    <!-- Don't transitively copy output files, since everything builds to the same folder. -->
+    <UseCommonOutputDirectory>True</UseCommonOutputDirectory>
+    
+    <!--<AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>-->
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,7 @@
+out
+obj
+bin
+artifacts
+*.metaproj*
+.suo
+launchsettings.json

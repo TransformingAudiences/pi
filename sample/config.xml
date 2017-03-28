@@ -1,0 +1,125 @@
+<Tapi xmlns="http://tempuri.org/tapi.xsd">
+  <DataSource name="Sample">
+    <File name="dem" fileName="AU{Date:yyMMdd}.dem" type="Individual">
+      <Field name="PID" position="0" length="9" valueType="Text" variableType="IndividualId" />
+      <Field name="Weight" position="9" length="8" valueType="Double" variableType="Weight" />
+
+      <Field name="HID" position="0" length="7" valueType="Text"  />
+      <Field name="Gender" position="17" length="1" valueType="Option" >
+        <Option value="1" description="" name="Male" />
+        <Option value="2" description="" name="Female" />
+      </Field>
+      <Field name="AgeGroup" position="21" length="1" valueType="Text" />
+    </File>
+
+    <File name="events" fileName="AU{Date:yyMMdd}.swd" type="Events">
+      <Field name="PID" position="0" length="9" valueType="Text" variableType="IndividualId" />
+      <Field name="Channel" position="9" length="4" valueType="Option" variableType="ProductId" >
+        <Option value="900" name="Kanal 1" />
+        <Option value="901" name="Kanal 2" />
+        <Option value="903" name="Kanal 3" />
+        <Option value="911" name="Kanal 4" />
+        <Option value="928" name="Kanal 5" />
+        <Option value="941" name="Kanal 6" />
+        <Option value="942" name="Kanal 7" />
+        <Option value="943" name="Kanal 8" />
+        <Option value="944" name="Kanal 9" />
+        <Option value="945" name="Kanal A" />
+        <Option value="964" name="Kanal B" />
+        <Option value="965" name="Kanal C" />
+      </Field>
+      <Field name="StartTime" position="13" length="6" valueType="Timespan" variableType="StartTime">
+        <Configurations>
+          <Configuration name="ValueType.Timespan.Format" value="HHmmss" />
+        </Configurations>
+      </Field>
+      <Field name="EndTime" position="19" length="6" valueType="Timespan" variableType="EndTime">
+        <Configurations>
+          <Configuration name="ValueType.Timespan.Format" value="HHmmss" />
+        </Configurations>
+      </Field>
+    </File>
+
+    <File name="program" fileName="DE{Date:yyMMdd}.std" type="Product" >
+      <Field name="Channel" position="7" length="3" valueType="Integer" variableType="ProductId" />
+      <Field name="StartTime" position="19" length="6" valueType="Timespan" variableType="StartTime" >
+        <Configuration name="ValueType.Timespan.Format" value="HHmmss" />
+      </Field>
+      <Field name="Duration" position="25" length="6" valueType="Integer" variableType="Duration" />
+
+      <Field name="Program" position="38" length="60" valueType="Text" />
+      <Field name="Genre" position="183" length="1" valueType="Option" >
+        <Option value="124" name="Barn"                 />
+        <Option value="034" name="Kultur"               />
+        <Option value="123" name="Livsåskådning"        />
+        <Option value="038" name="Livsstil"             />
+        <Option value="036" name="Musik"                />
+        <Option value="033" name="Nyheter"              />
+        <Option value="037" name="Samhälle"             />
+        <Option value="040" name="Service"              />
+        <Option value="039" name="Sport"                />
+        <Option value="120" name="System"               />
+        <Option value="121" name="Trafik"               />
+        <Option value="035" name="Underhållning"        />
+        <Option value="122" name="Vetenskap"            />
+        <Option value="127" name="Unspecified"          />
+      </Field>
+
+    </File>
+
+    <File name="spottar" fileName="SP{Date:yyMMdd}.std" type="Product" >
+      <Field name="Channel" position="9" length="3" valueType="Integer" variableType="ProductId" />
+      <Field name="StartTime" position="22" length="6" valueType="Timespan" variableType="StartTime" >
+        <Configuration name="ValueType.Timespan.Format" value="HHmmss" />
+      </Field>
+      <Field name="Duration" position="28" length="5" valueType="Integer" variableType="Duration" />
+
+      <Field name="Campaign" position="0" length="7" valueType="Integer" />
+    </File>
+
+  </DataSource>
+
+  <Repertoires>
+    <Repertoire name="Rating"
+                consumer="Individual.PID"
+                consumed="Channel.Name"
+                period="Day"
+                time="DayPart"
+                consumedSource="program"
+                calculation="Volume"  />
+
+    <Repertoire name="Reach"
+                consumer="Individual.PID"
+                consumed="Channel.Name"
+                period="Day"
+                time="DayPart"
+                consumedSource="spottar"
+                calculation="Frequency" />
+  </Repertoires>
+
+  <Reports>
+    <Report name="Rating"
+            reportoire="Rating"
+            from="2017-02-01"
+            to="2017-02-01"
+            rows ="Consumed"
+            columns ="Time"
+            format="Csv"
+            aggregate ="Sum"
+            postprocess="None"
+            template="" />
+
+      <Report name="Reach"
+              reportoire="Reach"
+              from="2017-02-01"
+              to="2017-02-01"
+              rows ="Consumed"
+              columns ="Time"
+              format="Csv"
+              aggregate ="Sum"
+              postprocess="None"
+              template="" />
+    
+  </Reports>
+
+</Tapi>

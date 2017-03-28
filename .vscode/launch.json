@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": ".NET Core Launch (console)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceRoot}\\out\\bin\\Debug\\tapi.dll",
+            "args": [
+                "-conf:${workspaceRoot}\\sample\\config.xml",
+                "-data:${workspaceRoot}\\sample\\data",
+                "-templates:${workspaceRoot}\\sample\\templates\\",
+                "-out:${workspaceRoot}\\sample\\out\\"],
+            "cwd": "${workspaceRoot}",
+            "externalConsole": false,
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": ".NET Core Attach",
+            "type": "coreclr",
+            "request": "attach",
+            "processId": "${command.pickProcess}"
+        }
+    ]
+}

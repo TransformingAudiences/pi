@@ -1,0 +1,1 @@
+dotnet out/bin/Debug/tapi.dll -conf:sample/config.xml -data:sample/data -templates:sample/templates/ -out:sample/out/ -log:Verbose

@@ -1,0 +1,183 @@
+<xs:schema 
+ id="tapi" 
+ targetNamespace="http://tempuri.org/tapi.xsd" 
+ elementFormDefault="qualified" 
+ xmlns="http://tempuri.org/tapi.xsd" 
+ xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:simpleType name="Type">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Individual"/>
+      <xs:enumeration value="Events"/>
+      <xs:enumeration value="Product"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="VariableType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="IndividualId"/>
+      <xs:enumeration value="Weight"/>
+      <xs:enumeration value="ProductId"/>
+      <xs:enumeration value="StartTime"/>
+      <xs:enumeration value="EndTime"/>
+      <xs:enumeration value="Duration"/>
+      <xs:enumeration value="Variable"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="OutputFormat" >
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Xlsx" />
+      <xs:enumeration value="Csv" />
+    </xs:restriction>
+  </xs:simpleType>
+  
+  <xs:simpleType name="PeriodType">
+    <xs:restriction base="xs:string" >
+      <xs:enumeration value="Minute" />
+      <xs:enumeration value="Hour" />
+      <xs:enumeration value="DayPart" />
+      <xs:enumeration value="Day" />
+      <xs:enumeration value="Week" />
+      <xs:enumeration value="Month" />
+      <xs:enumeration value="Day" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="RepertoireDimensionType">
+    <xs:restriction base="xs:string" >
+      <xs:enumeration value="Consumer" />
+      <xs:enumeration value="Consumed" />
+      <xs:enumeration value="Period" />
+      <xs:enumeration value="Time" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="AggregateType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Count" />
+      <xs:enumeration value="Sum" />
+      <xs:enumeration value="Average" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="PostProcessType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="None" />
+      <xs:enumeration value="VolumePercentage" />
+      <xs:enumeration value="Rank" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="CalculationType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Sample" />
+      <xs:enumeration value="Frequency" />
+      <xs:enumeration value="Volume" />
+      <xs:enumeration value="Custom" />
+    </xs:restriction>
+  </xs:simpleType>
+  
+  <xs:element name="Tapi">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="DataSource" minOccurs="0" maxOccurs="1">
+          <xs:annotation>
+            <xs:documentation>
+              Specify the format of the input data
+            </xs:documentation>
+          </xs:annotation>
+          
+          <xs:complexType>
+            <xs:sequence>
+
+
+              <xs:element name="File" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+
+                    <xs:element name="Field" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:any processContents="skip" minOccurs="0" maxOccurs="unbounded" />
+                        </xs:sequence>
+                        <xs:attribute name="name" />
+
+                        <xs:attribute name="variableType" type="VariableType" />
+                        <xs:attribute name="valueType" />
+                        <xs:attribute name="position" type="xs:int" />
+                        <xs:attribute name="length" type="xs:int" />
+                      </xs:complexType>
+                    </xs:element>
+
+                  </xs:sequence>
+                  <xs:attribute name="name" />
+
+                  <xs:attribute name="type" type="Type" />
+                  <xs:attribute name="fileName" type="xs:string" />
+                </xs:complexType>
+              </xs:element>
+
+            </xs:sequence>
+
+
+            <xs:attribute name="name" />
+
+          </xs:complexType>
+        </xs:element>
+
+
+
+        <xs:element name="Repertoires" minOccurs="0" maxOccurs="1">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Repertoire" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <!--<xs:element name="Configurations" type="ConfigurationsType" minOccurs="0" maxOccurs="1" />-->
+                    <xs:any processContents="skip" minOccurs="0" maxOccurs="unbounded" />
+                  </xs:sequence>
+                  <xs:attribute name="name" use="required" />
+                  <xs:attribute name="consumer" type="xs:string" use="required" />
+                  <xs:attribute name="consumed" type="xs:string" use="required" />
+                  <xs:attribute name="period" type="PeriodType" default="Minute" use="optional" />
+                  <xs:attribute name="time" type="PeriodType" default="Day" use="optional"/>
+                  
+                  <xs:attribute name="consumedSource" type="xs:string" />
+                  <xs:attribute name="calculation" type="CalculationType" use="required" />
+                  <xs:attribute name="calculationScript" type="xs:string" />
+                  
+                  <xs:attribute name="filter" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        
+        <xs:element name="Reports" minOccurs="0" maxOccurs="1">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Report" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:any processContents="skip" minOccurs="0" maxOccurs="unbounded" />
+                  </xs:sequence>
+                  <xs:attribute name="name" />
+                  <xs:attribute name="reportoire" />
+                  <xs:attribute name="from" type="xs:date" use="required" />
+                  <xs:attribute name="to" type="xs:date" use="required" />
+                  <xs:attribute name="rows" type="RepertoireDimensionType" />
+                  <xs:attribute name="columns" type="RepertoireDimensionType" />
+                  <xs:attribute name="aggregate" type="AggregateType" />
+                  <xs:attribute name="postprocess" type="PostProcessType" />
+                  <xs:attribute name="template" />
+                  <xs:attribute name="format" type="OutputFormat" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
