@@ -96,12 +96,12 @@ namespace tapi
         {
             if(report.Columns == ReportDimension.Time && report.Reportoar.Time == PeriodType.Minute)
             {
-                var start = TimeSpan.FromHours(evs.Min(x=>x.Timestamp).Hours);
+                var start = TimeSpan.FromHours(evs.Min(x=>x.StartTime).Hours);
                 foreach(var row in res)
                 {
                     foreach(var time in Enumerable.Range(0,60 * 24).Select(x=> start.Add(TimeSpan.FromMinutes(x))))
                     {
-                        var name = DateTime.Today.ToString(time,PeriodType.Minute);
+                        var name =  GetStringForPeriodType( DateTime.Today,time,PeriodType.Minute);
                         if(!row.Value.ContainsKey(name))
                         {
                             row.Value.Add(name,0);
@@ -232,10 +232,9 @@ namespace tapi
         {
             var consumer = d.Consumer(e);
             var consumed = d.Consumed(e); 
-            var period = e.Date.ToString(e.Timestamp, d.Period);
-            var expandedTime = Enumerable
-                .Range(0, Math.Max(1, e.Duration.GetNbr(d.Time)))
-                .Select(n => e.Date.ToString(e.Timestamp.Add(d.Time.GetTimeSpan(n)), d.Time) )
+            var period = GetStringForPeriodType( e.Date,e.StartTime, d.Period);
+            var expandedTime = SplitEventOnPeriodType(e,d.Time)
+                .Select(n => GetStringForPeriodType(n.date, n.time, d.Time) )
                 .ToList();
             
             switch(consumed)
@@ -272,9 +271,9 @@ namespace tapi
                 case PeriodType.Minute:
                     return 1;
                 case PeriodType.Hour:
-                    return (int)e.Duration.TotalMinutes;
                 case PeriodType.DayPart:
-                    return (int)e.Duration.TotalMinutes;
+                    var interval = GetInterval(time, type);
+                    return (int)GetOverlapping(interval,(e.StartTime,e.EndTime)).TotalMinutes;
                 case PeriodType.Day:
                 case PeriodType.Week:
                 case PeriodType.Month:
@@ -284,29 +283,21 @@ namespace tapi
             
         }
 
-    }
-    internal static class ReportExtension
-    {
-        public static string ToString(this DateTime date,TimeSpan time, PeriodType type)
+        public IEnumerable<(DateTime date, TimeSpan time)> SplitEventOnPeriodType(Event e, PeriodType type)
         {
-            switch (type)
-            {
-                case PeriodType.Minute:
-                    return ((int)time.TotalHours * 60 + time.Minutes).ToString("0000");
-                case PeriodType.Hour:
-                    return time.TotalHours.ToString("00");
-                case PeriodType.DayPart:
-                    var partsLength = 3;
-                    return (((int)time.TotalHours / partsLength) * partsLength).ToString("00") +"-" + ((((int)time.TotalHours + partsLength) / partsLength) * partsLength).ToString("00");
-                case PeriodType.Day:
-                    return date.ToString("MMdd");
-                case PeriodType.Week:
-                case PeriodType.Month:
-                default:
-                    return date.Month.ToString("00");
-            }
+            var nbrOfCells =
+                type == PeriodType.Minute ? ((int)e.EndTime.TotalMinutes - (int)e.StartTime.TotalMinutes) + 1 :
+                type == PeriodType.Hour ? ((int)e.EndTime.TotalHours - (int)e.StartTime.TotalHours) + 1 :
+                type == PeriodType.DayPart ? ((int)e.EndTime.TotalHours / 3 - (int)e.StartTime.TotalHours / 3) + 1 :
+                type == PeriodType.Day ?    1 :
+                type == PeriodType.Week ?   1 :
+                type == PeriodType.Month ?  1 :
+                throw new ArgumentException("");
+
+            return Enumerable.Range(0, nbrOfCells).Select(x=> (e.Date,e.StartTime.Add(GetTimeSpan(type,x))));
         }
-        public static int GetNbr(this TimeSpan ts, PeriodType type)
+
+        public  int GetNbrOfCells( TimeSpan ts, PeriodType type)
         {
             switch (type)
             {
@@ -324,7 +315,7 @@ namespace tapi
                     return ts.Days / 30;
             }
         }
-        public static TimeSpan GetTimeSpan(this PeriodType type, int unit)
+        public  TimeSpan GetTimeSpan(PeriodType type, int unit)
         {
             switch (type)
             {
@@ -342,5 +333,73 @@ namespace tapi
                     return TimeSpan.FromDays(30 * unit);
             }
         }
+
+        public string GetStringForPeriodType(DateTime date, TimeSpan time, PeriodType type)
+        {
+            switch (type)
+            {
+                case PeriodType.Minute:
+                    return ((int)time.TotalHours).ToString("00") + ":" + time.Minutes.ToString("00");
+                case PeriodType.Hour:
+                    return ((int)time.TotalHours).ToString("00");
+                case PeriodType.DayPart:
+                    var partsLength = 3;
+                    return (((int)time.TotalHours / partsLength) * partsLength).ToString("00") + "-" + ((((int)time.TotalHours + partsLength) / partsLength) * partsLength).ToString("00");
+                case PeriodType.Day:
+                    return date.ToString("MMdd");
+                case PeriodType.Week:
+                case PeriodType.Month:
+                default:
+                    return date.Month.ToString("00");
+            }
+        }
+
+        public (TimeSpan start, TimeSpan end) GetInterval(string time, PeriodType type)
+        {
+            switch (type)
+            {
+                case PeriodType.Minute:
+                    var hour = int.Parse(time.Substring(0, 2));
+                    var minute = int.Parse(time.Substring(2, 2));
+                    var start = TimeSpan.FromMinutes(60 * hour + minute);
+                    return (start, start.Add(TimeSpan.FromSeconds(59)));
+                case PeriodType.Hour:
+                    hour = int.Parse(time.Substring(0, 2));
+                    start = TimeSpan.FromMinutes(60 * hour);
+                    return (start, start.Add(TimeSpan.FromSeconds(59 * 60 + 59)));
+                case PeriodType.DayPart:
+                    hour = int.Parse(time.Substring(0, 2));
+                    start = TimeSpan.FromMinutes(60 * hour);
+                    return (start, start.Add(TimeSpan.FromSeconds(2*60 * 60 + 59 * 60 + 59)));
+                case PeriodType.Day:
+                case PeriodType.Week:
+                case PeriodType.Month:
+                default:
+                    throw new NotImplementedException();
+                  
+            }
+        }
+        public TimeSpan GetOverlapping( (TimeSpan start, TimeSpan end) left, (TimeSpan start, TimeSpan end) right)
+        {
+            var isStartIn = left.start <= right.start && right.start <= left.end;
+            var isEndIn = left.start <= right.end && right.end <= left.end;
+
+            if(isStartIn && isEndIn)
+            {
+                return right.end - right.start;
+            }
+            else if (isStartIn && !isEndIn)
+            {
+                return left.end - right.start;
+            }
+            else if(!isStartIn && isEndIn)
+            {
+                return right.end - left.start;
+            }
+
+            return TimeSpan.FromSeconds(0);
+        }
+
+
     }
 }
