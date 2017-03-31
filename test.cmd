@@ -1,4 +1,6 @@
-dotnet build
+echo off
+
+dotnet build tapi.sln
 dotnet test src/tapi.unittest/tapi.unittest.csproj --no-build -o ../../out/bin/debug
 
 rem reset baseline files

@@ -6,19 +6,19 @@ namespace tapi
     public class Consumed : Unit
     {
         public int Id { get; }
-        public DateTime StartTime {get;}
-        public DateTime EndTime {get;} 
+        public DateTime Date { get; }
+        public TimeSpan StartTime {get;}
+        public TimeSpan EndTime {get;} 
         public string Source {get;}
-        public Consumed(int id, DateTime startTime,int duration,string source, IEnumerable<VariableValue> variables): base(variables)
+        public (TimeSpan start, TimeSpan end) Interval => (StartTime, EndTime);
+        public Consumed(int id,DateTime date, TimeSpan startTime,int duration,string source, IEnumerable<VariableValue> variables): base(variables)
         {
             Id = id;
+            Date = date;
             StartTime = startTime;
-            EndTime =startTime.AddSeconds(duration);
+            EndTime =startTime.Add(TimeSpan.FromSeconds( duration));
             Source = source;
         }
-        public bool IsOverlapping(DateTime start, DateTime end)
-        {
-            return this.StartTime <= start && this.EndTime >= end; 
-        }
+      
     }
 }

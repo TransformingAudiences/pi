@@ -82,7 +82,7 @@
   <Repertoires>
     <Repertoire name="minutes_in_column"
                 consumer="Individual.PID"
-                consumed="Channel"
+                consumed="Channel.Name"
                 calculation="Sample" />
 
     <Repertoire name="classic_Frequency"
@@ -92,26 +92,58 @@
                 time="DayPart"
                 consumedSource="program"
                 calculation="Custom"
-                calculationScript="Take(1).Count()"
-                />
+                calculationScript="Take(1).Count()" />
 
-    
-
-    <!--<Repertoire name="classic_time"
+    <Repertoire name="reach_minute"
                 consumer="Individual.PID"
                 consumed="Channel.Name"
-                calculation="Take(1).Count()" />
+                time="Minute"
+                calculation="Frequency" />
 
-    <Repertoire name="classic_time_exp"
+    <Repertoire name="reach_hour"
                 consumer="Individual.PID"
-                consumed="Channel"
-                calculation="Sum(x=>x.Duration.TotalMinutes)" />
+                consumed="Channel.Name"
+                time="Hour"
+                calculation="Frequency" />
 
-    <Repertoire name="social"
-                consumer="Individual.HID"
-                consumed="Channel"
-                calculation="Select(x=> ((dynamic)x).Individual.PID).Distinct().Count()"
-                filter="Individual.Gender.Name==&quot;Male&quot;" />-->
+    <Repertoire name="reach_daypart"
+                consumer="Individual.PID"
+                consumed="Channel.Name"
+                time="DayPart"
+                calculation="Frequency" />
+
+    <Repertoire name="reach_day"
+                consumer="Individual.PID"
+                consumed="Channel.Name"
+                time="Day"
+                calculation="Frequency" />
+
+
+    <Repertoire name="rating_minute"
+                consumer="Individual.PID"
+                consumed="Channel.Name"
+                time="Minute"
+                calculation="Volume" />
+
+    <Repertoire name="rating_hour"
+                consumer="Individual.PID"
+                consumed="Channel.Name"
+                time="Hour"
+                calculation="Volume" />
+
+    <Repertoire name="rating_daypart"
+                consumer="Individual.PID"
+                consumed="Channel.Name"
+                time="DayPart"
+                calculation="Volume" />
+
+    <Repertoire name="rating_day"
+                consumer="Individual.PID"
+                consumed="Channel.Name"
+                time="Day"
+                calculation="Volume" />
+
+
   </Repertoires>
 
   <Reports>
@@ -137,17 +169,94 @@
             postprocess="None"
             template="" />
 
-      <!--<Report name="classic_2"
-              reportoire="classic_Frequency_2"
-              from="2017-02-01"
-              to="2017-02-27"
-              rows ="Consumed"
-              columns ="Time"
-              format="Csv"
-              aggregate ="Sum"
-              postprocess="None"
-              template="" />-->
-    
+    <Report name="test_reach_minute"
+            reportoire="reach_minute"
+            from="2017-02-01"
+            to="2017-02-01"
+            rows ="Consumed"
+            columns ="Time"
+            format="Csv"
+            aggregate ="Sum"
+            postprocess="None"
+            template="" />
+
+    <Report name="test_reach_hour"
+          reportoire="reach_hour"
+          from="2017-02-01"
+          to="2017-02-01"
+          rows ="Consumed"
+          columns ="Time"
+          format="Csv"
+          aggregate ="Sum"
+          postprocess="None"
+          template="" />
+
+    <Report name="test_reach_daypart"
+          reportoire="reach_daypart"
+          from="2017-02-01"
+          to="2017-02-01"
+          rows ="Consumed"
+          columns ="Time"
+          format="Csv"
+          aggregate ="Sum"
+          postprocess="None"
+          template="" />
+
+    <Report name="test_reach_day"
+          reportoire="reach_day"
+          from="2017-02-01"
+          to="2017-02-01"
+          rows ="Consumed"
+          columns ="Time"
+          format="Csv"
+          aggregate ="Sum"
+          postprocess="None"
+          template="" />
+
+    <Report name="test_rating_minute"
+           reportoire="rating_minute"
+           from="2017-02-01"
+           to="2017-02-01"
+           rows ="Consumed"
+           columns ="Time"
+           format="Csv"
+           aggregate ="Sum"
+           postprocess="None"
+           template="" />
+
+    <Report name="test_rating_hour"
+          reportoire="rating_hour"
+          from="2017-02-01"
+          to="2017-02-01"
+          rows ="Consumed"
+          columns ="Time"
+          format="Csv"
+          aggregate ="Sum"
+          postprocess="None"
+          template="" />
+
+    <Report name="test_rating_daypart"
+          reportoire="rating_daypart"
+          from="2017-02-01"
+          to="2017-02-01"
+          rows ="Consumed"
+          columns ="Time"
+          format="Csv"
+          aggregate ="Sum"
+          postprocess="None"
+          template="" />
+
+    <Report name="test_rating_day"
+          reportoire="rating_day"
+          from="2017-02-01"
+          to="2017-02-01"
+          rows ="Consumed"
+          columns ="Time"
+          format="Csv"
+          aggregate ="Sum"
+          postprocess="None"
+          template="" />
+
   </Reports>
 
 </Tapi>

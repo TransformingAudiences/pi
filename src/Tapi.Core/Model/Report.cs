@@ -9,7 +9,7 @@ namespace tapi
     public class Report
     {
         public string Name { get; }
-        public Reportoire Reportoar { get; }
+        public Repertoire Reportoar { get; }
         public DateTime From { get; }
         public DateTime To { get; }
         public ReportDimension Rows {get;}
@@ -21,7 +21,7 @@ namespace tapi
 
         public int NbrOfDays => (To - From).Days + 1;
         public string FileName => Name + (Format == OutputFormat.Xlsx ? ".xlsx" : ".csv");
-        private Report(string name, Reportoire reportoar, DateTime from, DateTime to, ReportDimension rows, ReportDimension columns, AggregateType aggregate, PostProcessType postprocess, OutputFormat format, string template)
+        private Report(string name, Repertoire reportoar, DateTime from, DateTime to, ReportDimension rows, ReportDimension columns, AggregateType aggregate, PostProcessType postprocess, OutputFormat format, string template)
         {
             Name = name;
             Reportoar = reportoar;
@@ -36,7 +36,7 @@ namespace tapi
 
 
         }
-        public static Report Load(XElement xml, List<Reportoire> reportoires)
+        public static Report Load(XElement xml, List<Repertoire> reportoires)
         {
             var name = xml.Attribute("name")?.Value as string;
             var reportoireName = xml.Attribute("reportoire")?.Value as string;

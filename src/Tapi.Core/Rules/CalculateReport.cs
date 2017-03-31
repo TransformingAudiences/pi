@@ -22,7 +22,7 @@ namespace tapi
                     .Select(r => new
                     {
                         r.Key,
-                        Value =  CalculateWeightedReportoireValue(r.Key.time,report, r.Select(y => y.@event))
+                        Value =  CalculateWeightedReportoireValue(r.Key.time,report, r.Select(y => y.source))
 
                     })
                     .GroupBy(x => CalculateAggregationKey(x.Key, report))
@@ -62,11 +62,11 @@ namespace tapi
             return (res,file);
         }
 
-        private double CalculateWeightedReportoireValue(string time, Report report, IEnumerable<Event> events)
+        private double CalculateWeightedReportoireValue(string time, Report report, IEnumerable<(Event e,TimeSpan d)> events)
         {
-            var days = events.Select(x => x.Date.Date).Distinct().ToList();
+            var days = events.Select(x => x.e.Date.Date).Distinct().ToList();
 
-            var weightMap = events.Select(x => x.Individual)
+            var weightMap = events.Select(x => x.e.Individual)
                     .GroupBy(x => x.Id)
                     .Select(x =>
                     {
@@ -84,9 +84,9 @@ namespace tapi
                 case CalculationType.Frequency:
                     return weightMap.Sum(x=>x.Value);
                 case CalculationType.Volume:
-                    return events.Select(x=> GetNbrOfMinutesInReportoire(time,report.Reportoar.Time, x) * weightMap[x.Individual.Id] ).Sum();
+                    return events.Select(x=> Math.Round(x.d.TotalMinutes) * weightMap[x.e.Individual.Id] ).Sum();
                 case CalculationType.Custom:
-                    return report.Reportoar.CalculationFunc(events);
+                    return report.Reportoar.CalculationFunc(events.Select(x=>x.e));
                 default:
                     throw new ArgumentException("");
             }
@@ -101,7 +101,7 @@ namespace tapi
                 {
                     foreach(var time in Enumerable.Range(0,60 * 24).Select(x=> start.Add(TimeSpan.FromMinutes(x))))
                     {
-                        var name =  GetStringForPeriodType( DateTime.Today,time,PeriodType.Minute);
+                        var name =  TimeHelpers.GetPeriodInfo( DateTime.Today,time,PeriodType.Minute).tag;
                         if(!row.Value.ContainsKey(name))
                         {
                             row.Value.Add(name,0);
@@ -167,6 +167,11 @@ namespace tapi
         }
         private string PrittyPrint(Matrix res)
         {
+            if(res.Count == 0)
+            {
+                return "";
+            }
+
             var columns = res.SelectMany(x => x.Value.Select(y => new { y.Key, Length = Math.Max(y.Key.Length, Math.Round(y.Value,0).ToString("N0").Length) } ))
                 .GroupBy(x=>x.Key)
                 .OrderBy(x => x.Key)
@@ -228,21 +233,33 @@ namespace tapi
                 return ms.ToArray();
             }
         }
-        List<((string consumer, string consumed, string period, string time) key, Event @event)> ExpandOnRepertoire(Event e, Reportoire d)
+        List<((string consumer, string consumed, string period, string time) key, (Event e, TimeSpan duration) source)> ExpandOnRepertoire(Event e, Repertoire d)
         {
             var consumer = d.Consumer(e);
             var consumed = d.Consumed(e); 
-            var period = GetStringForPeriodType( e.Date,e.StartTime, d.Period);
-            var expandedTime = SplitEventOnPeriodType(e,d.Time)
-                .Select(n => GetStringForPeriodType(n.date, n.time, d.Time) )
-                .ToList();
+            var period = TimeHelpers.GetPeriodInfo( e.Date,e.StartTime, d.Period).tag;
+            var expandedTime = TimeHelpers.SplitInterval(e.Date,e.Interval,d.Time).ToList();
             
             switch(consumed)
             {
                 case string cs :
-                    return expandedTime.Select(time => ((consumer, cs, period, time), e)).ToList();
-                case List<Tuple<string,Consumed>> cs :
-                    return expandedTime.Select(time => ((consumer, cs.FirstOrDefault()?.Item1 ?? "nn", period, time), e)).ToList();
+                    return expandedTime.Select(time => (
+                        key: (consumer, cs, period, time.tag), 
+                        source: ( 
+                            @event: e,
+                            duration: time.interval.GetOverlapping(e.Interval).GetDuration() 
+                    ))).ToList();
+                case List<(string key,Consumed consumed)> cs :
+                    return  expandedTime.SelectMany(time => 
+                        cs.Select(c => (
+                            key: (consumer, c.key, period, time.tag), 
+                            source: (@event: e, 
+                            duration: time.interval.IsOverlapping(c.consumed.Interval)
+                             ? time.interval.GetOverlapping(c.consumed.Interval).GetOverlapping(e.Interval).GetDuration()
+                             : TimeSpan.FromSeconds(0))
+                        )))
+                        .Where(x=>x.source.duration.TotalSeconds > 0)
+                        .ToList();
                 default :
                     throw new ArgumentException("Can't use the consumer"); 
             }
@@ -263,143 +280,12 @@ namespace tapi
 
             return (rows, cols);
         }
-        
-        public int GetNbrOfMinutesInReportoire(string time, PeriodType type, Event e)
-        {
-            switch (type)
-            {
-                case PeriodType.Minute:
-                    return 1;
-                case PeriodType.Hour:
-                case PeriodType.DayPart:
-                    var interval = GetInterval(time, type);
-                    return (int)GetOverlapping(interval,(e.StartTime,e.EndTime)).TotalMinutes;
-                case PeriodType.Day:
-                case PeriodType.Week:
-                case PeriodType.Month:
-                default:
-                    return (int)e.Duration.TotalMinutes;
-            }
-            
-        }
 
-        public IEnumerable<(DateTime date, TimeSpan time)> SplitEventOnPeriodType(Event e, PeriodType type)
-        {
-            var nbrOfCells =
-                type == PeriodType.Minute ? ((int)e.EndTime.TotalMinutes - (int)e.StartTime.TotalMinutes) + 1 :
-                type == PeriodType.Hour ? ((int)e.EndTime.TotalHours - (int)e.StartTime.TotalHours) + 1 :
-                type == PeriodType.DayPart ? ((int)e.EndTime.TotalHours / 3 - (int)e.StartTime.TotalHours / 3) + 1 :
-                type == PeriodType.Day ?    1 :
-                type == PeriodType.Week ?   1 :
-                type == PeriodType.Month ?  1 :
-                throw new ArgumentException("");
+       
 
-            return Enumerable.Range(0, nbrOfCells).Select(x=> (e.Date,e.StartTime.Add(GetTimeSpan(type,x))));
-        }
+       
 
-        public  int GetNbrOfCells( TimeSpan ts, PeriodType type)
-        {
-            switch (type)
-            {
-                case PeriodType.Minute:
-                    return (int)ts.TotalMinutes;
-                case PeriodType.Hour:
-                    return (int)ts.TotalHours;
-                case PeriodType.DayPart:
-                    return ((int)ts.TotalHours / 3);
-                case PeriodType.Day:
-                    return ts.Days;
-                case PeriodType.Week:
-                case PeriodType.Month:
-                default:
-                    return ts.Days / 30;
-            }
-        }
-        public  TimeSpan GetTimeSpan(PeriodType type, int unit)
-        {
-            switch (type)
-            {
-                case PeriodType.Minute:
-                    return TimeSpan.FromMinutes(1 * unit);
-                case PeriodType.Hour:
-                    return TimeSpan.FromHours(1 * unit);
-                case PeriodType.DayPart:
-                    return TimeSpan.FromHours(3 * unit);
-                case PeriodType.Day:
-                    return TimeSpan.FromDays(1 * unit);
-                case PeriodType.Week:
-                case PeriodType.Month:
-                default:
-                    return TimeSpan.FromDays(30 * unit);
-            }
-        }
-
-        public string GetStringForPeriodType(DateTime date, TimeSpan time, PeriodType type)
-        {
-            switch (type)
-            {
-                case PeriodType.Minute:
-                    return ((int)time.TotalHours).ToString("00") + ":" + time.Minutes.ToString("00");
-                case PeriodType.Hour:
-                    return ((int)time.TotalHours).ToString("00");
-                case PeriodType.DayPart:
-                    var partsLength = 3;
-                    return (((int)time.TotalHours / partsLength) * partsLength).ToString("00") + "-" + ((((int)time.TotalHours + partsLength) / partsLength) * partsLength).ToString("00");
-                case PeriodType.Day:
-                    return date.ToString("MMdd");
-                case PeriodType.Week:
-                case PeriodType.Month:
-                default:
-                    return date.Month.ToString("00");
-            }
-        }
-
-        public (TimeSpan start, TimeSpan end) GetInterval(string time, PeriodType type)
-        {
-            switch (type)
-            {
-                case PeriodType.Minute:
-                    var hour = int.Parse(time.Substring(0, 2));
-                    var minute = int.Parse(time.Substring(2, 2));
-                    var start = TimeSpan.FromMinutes(60 * hour + minute);
-                    return (start, start.Add(TimeSpan.FromSeconds(59)));
-                case PeriodType.Hour:
-                    hour = int.Parse(time.Substring(0, 2));
-                    start = TimeSpan.FromMinutes(60 * hour);
-                    return (start, start.Add(TimeSpan.FromSeconds(59 * 60 + 59)));
-                case PeriodType.DayPart:
-                    hour = int.Parse(time.Substring(0, 2));
-                    start = TimeSpan.FromMinutes(60 * hour);
-                    return (start, start.Add(TimeSpan.FromSeconds(2*60 * 60 + 59 * 60 + 59)));
-                case PeriodType.Day:
-                case PeriodType.Week:
-                case PeriodType.Month:
-                default:
-                    throw new NotImplementedException();
-                  
-            }
-        }
-        public TimeSpan GetOverlapping( (TimeSpan start, TimeSpan end) left, (TimeSpan start, TimeSpan end) right)
-        {
-            var isStartIn = left.start <= right.start && right.start <= left.end;
-            var isEndIn = left.start <= right.end && right.end <= left.end;
-
-            if(isStartIn && isEndIn)
-            {
-                return right.end - right.start;
-            }
-            else if (isStartIn && !isEndIn)
-            {
-                return left.end - right.start;
-            }
-            else if(!isStartIn && isEndIn)
-            {
-                return right.end - left.start;
-            }
-
-            return TimeSpan.FromSeconds(0);
-        }
-
+     
 
     }
 }

@@ -11,6 +11,7 @@ namespace tapi
         public Dictionary<string,List<Consumed>> Products { get; }
         public TimeSpan StartTime { get; }
         public TimeSpan EndTime => StartTime.Add(Duration);
+        public (TimeSpan start, TimeSpan end) Interval => (StartTime, EndTime);
         public TimeSpan Duration {get;}
         public Event(DateTime date, TimeSpan timestamp, Consumer consumer, List<Consumed> consumed, IEnumerable<VariableValue> variables): base(variables)
         {

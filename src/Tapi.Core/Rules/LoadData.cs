@@ -53,13 +53,13 @@ namespace tapi
                     consumed.AddRange( lines.Select(line =>
                     {
                         var id = (int)line.Where(x => x.Field.VariableType ==  VariableType.ProductId).Single().Value;
-                        var startTime = date.Add( (TimeSpan)line.Where(x => x.Field.VariableType == VariableType.StartTime).Single().Value);
+                        var startTime =  (TimeSpan)line.Where(x => x.Field.VariableType == VariableType.StartTime).Single().Value;
                         var duration = (int)line.Where(x => x.Field.VariableType == VariableType.Duration).Single().Value;
-                        return new Consumed(id,startTime,duration,consumedFile.Name, line);
+                        return new Consumed(id,date,startTime,duration,consumedFile.Name, line);
                     }));
                 }
             }
-            var consumedMap = consumed.GroupBy(x=>x.Id).ToDictionary(x=>x.Key, x=> x.OrderBy(y=> y.StartTime).ToList());
+            var consumedMap = consumed.GroupBy(x=> new { x.Id,x.Date}).ToDictionary(x=>x.Key, x=> x.OrderBy(y=> y.StartTime).ToList());
             foreach (var date in StartDate.To(EndDate))
             {
                 var events = new List<Event>();
@@ -75,8 +75,9 @@ namespace tapi
 
                         var channel = ((OptionValue)line.Where(x => x.Field.VariableType == VariableType.ProductId).Single().Value).Value;
                         var endTime = (TimeSpan)line.Where(x => x.Field.VariableType == VariableType.EndTime).Single().Value;
-                        var channels = consumedMap.ContainsKey(channel) ? consumedMap [channel] : new List<Consumed>();
-                        var consumeds = MatchConsumed(date.Add(timestamp),date.Add(endTime), channels);
+                        var channelKey = new { Id = channel, Date = date };
+                        var channels = consumedMap.ContainsKey(channelKey) ? consumedMap [channelKey] : new List<Consumed>();
+                        var consumeds = MatchConsumed(timestamp,endTime, channels);
 
                         return new Event(date,timestamp, consumer, consumeds, line);
                     }).ToList();
@@ -86,9 +87,12 @@ namespace tapi
             }
 
         }
-        private List<Consumed> MatchConsumed(DateTime startTime, DateTime endTime, List<Consumed> consumedChannel)
+        private List<Consumed> MatchConsumed(TimeSpan startTime, TimeSpan endTime, List<Consumed> consumedChannel)
         {
-            return consumedChannel.Where(x=>x.IsOverlapping(startTime,endTime)).ToList();
+            return consumedChannel.Where(x=> TimeHelpers.IsOverlapping(
+                    x.Interval,
+                    (startTime,endTime)
+                )).ToList();
         }
 
         private IEnumerable<List<VariableValue>> ParseFile(DataFile file, string dir, DateTime date)

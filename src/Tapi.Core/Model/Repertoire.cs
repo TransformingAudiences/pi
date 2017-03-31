@@ -4,7 +4,7 @@ using System.Xml.Linq;
 
 namespace tapi
 {
-    public class Reportoire
+    public class Repertoire
     {
         public string Name {get;}
         public Func<Event,string> Consumer { get;  }
@@ -14,7 +14,7 @@ namespace tapi
         public CalculationType Calculation {get;}
         public Func<IEnumerable<Event>, double> CalculationFunc { get;  }
         public Func<Event, bool> Filter { get;  }
-        private Reportoire(string name, Func<Event,string> consumer, Func<Event,object> consumed,PeriodType period,PeriodType time, CalculationType calculation,Func<IEnumerable<Event>, double> calculationScript, Func<Event,bool> filter)
+        private Repertoire(string name, Func<Event,string> consumer, Func<Event,object> consumed,PeriodType period,PeriodType time, CalculationType calculation,Func<IEnumerable<Event>, double> calculationScript, Func<Event,bool> filter)
         {
             Name = name;
             Consumer = consumer;
@@ -25,7 +25,7 @@ namespace tapi
             CalculationFunc = calculationScript; 
             Filter = filter;
         }
-        public static Reportoire Load(XElement xml)
+        public static Repertoire Load(XElement xml)
         {
             var name = xml.Attribute("name")?.Value as string;
             var consumer = xml.Attribute("consumer")?.Value as string;
@@ -47,7 +47,7 @@ namespace tapi
                     {{
                         var E = x as dynamic; 
                         var name = E.{consumed.Replace("Product.","")}.ToString() as string;
-                        return Tuple.Create(name,x);
+                        return (name,x);
                     }}).ToList();",new string[]{"e"});
             
             var calculationFunc = calculation == CalculationType.Custom
@@ -61,7 +61,7 @@ namespace tapi
             var period = (PeriodType)Enum.Parse(typeof(PeriodType), periodIn);
             var time = (PeriodType)Enum.Parse(typeof(PeriodType), timeIn);
 
-            return new Reportoire(name, consumerFunc, consumedFunc, period, time, calculation,calculationFunc, filterFunc);
+            return new Repertoire(name, consumerFunc, consumedFunc, period, time, calculation,calculationFunc, filterFunc);
         }
     }
 

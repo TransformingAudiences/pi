@@ -20,11 +20,11 @@ namespace tapi
         public static XName XNAME_REPORT = XName.Get("Report", XMLNS_TAPI);
 
         public RawDataSource DataSource { get; }
-        public List<Reportoire> Reportoires { get; }
+        public List<Repertoire> Reportoires { get; }
         public List<Report> Reports { get; }
         public DateTime From => Reports.Min(x => x.From);
         public DateTime To => Reports.Max(x => x.To);
-        private Model(RawDataSource sources, List<Reportoire> reportoires, List<Report> reports)
+        private Model(RawDataSource sources, List<Repertoire> reportoires, List<Report> reports)
         {
             DataSource = sources;
             Reportoires = reportoires;
@@ -37,7 +37,7 @@ namespace tapi
             XElement xml = XElement.Parse(file);
             ValidateXml(xml);
             var source = xml.Descendants(XNAME_RAWDATASOURCE).Select(x => RawDataSource.Load(x)).FirstOrDefault();
-            var reportoires = xml.Descendants(XNAME_REPORTOIRE).Select(x => Reportoire.Load(x)).ToList();
+            var reportoires = xml.Descendants(XNAME_REPORTOIRE).Select(x => Repertoire.Load(x)).ToList();
             var reports = xml.Descendants(XNAME_REPORT).Select(x => Report.Load(x, reportoires)).ToList();
             return new Model(source, reportoires, reports);
         }
