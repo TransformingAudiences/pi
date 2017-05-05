@@ -25,23 +25,7 @@ namespace tapi
             }
         }
 
-        /// <summary>
-        /// Get the year and week from a DateTime 
-        /// </summary>
-        /// <param name="time"></param>
-        /// <returns>A tuple where Item1 is the year and Item2 is the week</returns>
-        public static Tuple<int, int> GetIso8601Week(this DateTime time)
-        {
-            time = time.GetLastInWeek();
-            // if the last day of the week is jan 1, 2 or 3 we should subtract one year in the result
-            var t = 0;
-            if (time.Month == 1 && (time.Day == 1 || time.Day == 2 || time.Day == 3))
-            {
-                t = -1;
-            }
-            // Return the week of our adjusted day
-            return new Tuple<int, int>(time.Year + t, CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(time, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday));
-        }
+       
         /// <summary>
         /// Get the first date of a week from a tuple of year and week
         /// </summary>

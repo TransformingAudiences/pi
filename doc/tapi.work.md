@@ -1,5 +1,25 @@
 ## TODO
 
+Fixa tester mot skarp data
+- 1 månaders data
+- 1 dag
+  - Reach, Rating, Minut, timme daypart, hel dag
+- 1 månad
+  - Reach, Rating, Minut, timme daypart, hel dag
+Tabbar med resultat ifrån infogalactic och config på hur vi vill att det skall definieras..
+
+
+Dela på förväntat värde (gäller rating / genomsnitts minut), aggregate inställning?
+
+Refactor av rapport och repertoire xml för att minska risken för fel
+
+
+
+
+
+
+
+
 - GetMinutes from Period
 - Expandera produkter
 
@@ -52,7 +72,6 @@ Motor för beräkningar
 - minuter * dagar * kaneler för individ, är en konsumtions reportoar
 - filtreringar och vad som skall aggregaras
 - då man aggregarar så kan y och z uppstå ,försvinna och återuppstå
-
 - Exportera till Excel
   - Kanalreportoarer
   - slå ihop kuben, ex, y = kanaler, x = dagar, cell = antal minuter, minuter skall alltså aggregeras
@@ -61,12 +80,8 @@ Motor för beräkningar
        - Tid på dagen
        - period
   - välj att visa i procent, eller frekvens
-
   sedan medelvärden, med hur många dagar panelisten är in tab
-        
-        - Jämför kanalrepotoarer
+          - Jämför kanalrepotoarer
                  - definiera filter 
                  - kolla på en individs skillnad mot övriga hushållet
-                 
-
-	- Konsumtionsreportoar på något annat än dag, kollapsas till en för panelen per dag
+  - Konsumtionsreportoar på något annat än dag, kollapsas till en för panelen per dag

@@ -31,7 +31,7 @@ namespace tapi
                         x.Key.row,
                         x.Key.column,
                         Value = report.Aggregeate == AggregateType.Count ? x.Count() :
-                                report.Aggregeate == AggregateType.Sum ? x.Sum(y => y.Value) :
+                                report.Aggregeate == AggregateType.Sum ? x.Sum(y => Math.Round(y.Value,3)) :
                                 report.Aggregeate == AggregateType.Average ? x.Average(y => y.Value) :
                                 throw new ArgumentException()
                     })
@@ -40,8 +40,16 @@ namespace tapi
                         x => x.Key,
                         x => x.ToDictionary(
                             y => y.column, 
-                            y => report.Aggregeate == AggregateType.Sum && report.Rows != ReportDimension.Period && report.Columns != ReportDimension.Period
-                             ? y.Value / report.NbrOfDays
+                            y => report.Aggregeate == AggregateType.Sum//&& report.Rows != ReportDimension.Period && report.Columns != ReportDimension.Period
+                             ?  report.Reportoar.Calculation == CalculationType.Frequency
+                                ? y.Value /  (report.Reportoar.Time != PeriodType.Day && report.Reportoar.Time != PeriodType.Week ? report.NbrOfDays : 1)  / 1000
+                                : y.Value / (report.Reportoar.Time != PeriodType.Day && report.Reportoar.Time != PeriodType.Week ? report.NbrOfDays : 1) / 1000 / (
+                                    report.Reportoar.Time == PeriodType.Minute ? 1 :
+                                    report.Reportoar.Time == PeriodType.Hour ? 60 : 
+                                    report.Reportoar.Time == PeriodType.DayPart ? 180 : 
+                                    report.Reportoar.Time == PeriodType.Day ? 60 * 24 : 
+                                    report.Reportoar.Time == PeriodType.Week ? 60 * 24 * 7 : 
+                                    1 )
                              : y.Value)
                     );
 
@@ -52,10 +60,14 @@ namespace tapi
 
             res = AddZeroCells(res,report,events);
 
-            var csv = CreateCsv(res);
+            var decimals = report.PostProcess == PostProcessType.VolumePercentage 
+                ? 2 
+                : 0;
+            
+            var csv = CreateCsv(res,decimals);
             Logger.Log("\r\n" + PrittyPrint(res) +"\r\n", true,true);
 
-            var file = report.Format == OutputFormat.Xlsx ? CreateExcel(res,report,templateDir) :
+            var file = report.Format == OutputFormat.Xlsx ? CreateExcel(res,report,templateDir,decimals) :
                        report.Format == OutputFormat.Csv ? Encoding.UTF8.GetBytes(csv) : 
                        throw new ArgumentException();
 
@@ -84,7 +96,7 @@ namespace tapi
                 case CalculationType.Frequency:
                     return weightMap.Sum(x=>x.Value);
                 case CalculationType.Volume:
-                    return events.Select(x=> Math.Round(x.d.TotalMinutes) * weightMap[x.e.Individual.Id] ).Sum();
+                    return events.Select(x=> Math.Round(x.d.TotalMinutes,0) * weightMap[x.e.Individual.Id] ).Sum();
                 case CalculationType.Custom:
                     return report.Reportoar.CalculationFunc(events.Select(x=>x.e));
                 default:
@@ -94,14 +106,19 @@ namespace tapi
 
         private Matrix AddZeroCells(Matrix res,Report report,List<Event> evs)
         {
-            if(report.Columns == ReportDimension.Time && report.Reportoar.Time == PeriodType.Minute)
+            if(report.Columns == ReportDimension.Time && (report.Reportoar.Time == PeriodType.Minute || report.Reportoar.Time == PeriodType.Hour || report.Reportoar.Time == PeriodType.DayPart))
             {
                 var start = TimeSpan.FromHours(evs.Min(x=>x.StartTime).Hours);
+                var cols = report.Reportoar.Time == PeriodType.Minute 
+                    ? Enumerable.Range(0,60 * 24).Select(x=> start.Add(TimeSpan.FromMinutes(x))).Select(time => TimeHelpers.GetPeriodInfo( DateTime.Today,time,PeriodType.Minute).tag).ToList()
+                    :  report.Reportoar.Time == PeriodType.Hour 
+                        ? Enumerable.Range(0, 24).Select(x=> start.Add(TimeSpan.FromHours(x))).Select(time => TimeHelpers.GetPeriodInfo( DateTime.Today,time,PeriodType.Hour).tag).ToList()
+                        : Enumerable.Range(0, 24 /3).Select(x=> start.Add(TimeSpan.FromHours(x *3))).Select(time => TimeHelpers.GetPeriodInfo( DateTime.Today,time,PeriodType.DayPart).tag).ToList();
                 foreach(var row in res)
                 {
-                    foreach(var time in Enumerable.Range(0,60 * 24).Select(x=> start.Add(TimeSpan.FromMinutes(x))))
+                    foreach(var time in cols)
                     {
-                        var name =  TimeHelpers.GetPeriodInfo( DateTime.Today,time,PeriodType.Minute).tag;
+                        var name =  time;
                         if(!row.Value.ContainsKey(name))
                         {
                             row.Value.Add(name,0);
@@ -150,7 +167,7 @@ namespace tapi
             }
             return res;
         }
-        private string CreateCsv(Matrix res)
+        private string CreateCsv(Matrix res,int decimals)
         {
             var separator = "\t";
             var columnNames = res.SelectMany(x => x.Value.Select(y => y.Key)).Distinct().OrderBy(x => x).ToList();
@@ -158,7 +175,7 @@ namespace tapi
             var header = "Name" + separator + string.Join(separator, columnNames);
 
             var lines = res.OrderBy(x => x.Key).Select(row => row.Key + separator + string.Join(separator, columnNames.Select(columnName =>
-                 row.Value.ContainsKey(columnName) ? Math.Round( row.Value[columnName],0) : 0
+                 row.Value.ContainsKey(columnName) ? Math.Round( row.Value[columnName],decimals) : 0
              )));
 
             var csv = header + Environment.NewLine + string.Join(Environment.NewLine, lines);
@@ -194,7 +211,7 @@ namespace tapi
             return csv;
         }
 
-        byte[] CreateExcel(Matrix res,Report report, string templateDir)
+        byte[] CreateExcel(Matrix res,Report report, string templateDir, int decimals)
         {
             var useTemplate = !string.IsNullOrEmpty(report.Template);
             using (var ts = useTemplate ? new MemoryStream(File.ReadAllBytes(Path.Combine(templateDir, report.Template))) : new MemoryStream())
@@ -222,7 +239,7 @@ namespace tapi
                     col = 2;
                     foreach (var columnName in columnNames)
                     {
-                        worksheet.Cells[row, col++].Value = r.Value.ContainsKey(columnName) ? Math.Round( r.Value[columnName],0) : 0;
+                        worksheet.Cells[row, col++].Value = r.Value.ContainsKey(columnName) ? Math.Round( r.Value[columnName],decimals) : 0;
                     }
 
 
@@ -237,14 +254,14 @@ namespace tapi
         {
             var consumer = d.Consumer(e);
             var consumed = d.Consumed(e); 
-            var period = TimeHelpers.GetPeriodInfo( e.Date,e.StartTime, d.Period).tag;
+            //var period = TimeHelpers.GetPeriodInfo( e.Date,e.StartTime, d.Period).tag;
             var expandedTime = TimeHelpers.SplitInterval(e.Date,e.Interval,d.Time).ToList();
             
             switch(consumed)
             {
                 case string cs :
                     return expandedTime.Select(time => (
-                        key: (consumer, cs, period, time.tag), 
+                        key: (consumer, cs, TimeHelpers.GetPeriodInfo( time.date,time.interval.start, d.Period).tag, time.tag), 
                         source: ( 
                             @event: e,
                             duration: time.interval.GetOverlapping(e.Interval).GetDuration() 
@@ -252,7 +269,7 @@ namespace tapi
                 case List<(string key,Consumed consumed)> cs :
                     return  expandedTime.SelectMany(time => 
                         cs.Select(c => (
-                            key: (consumer, c.key, period, time.tag), 
+                            key: (consumer, c.key, TimeHelpers.GetPeriodInfo( time.date,time.interval.start, d.Period).tag, time.tag), 
                             source: (@event: e, 
                             duration: time.interval.IsOverlapping(c.consumed.Interval)
                              ? time.interval.GetOverlapping(c.consumed.Interval).GetOverlapping(e.Interval).GetDuration()
