@@ -61,6 +61,11 @@ namespace tapi
             var period = (PeriodType)Enum.Parse(typeof(PeriodType), periodIn);
             var time = (PeriodType)Enum.Parse(typeof(PeriodType), timeIn);
 
+            if(period < time )
+            {
+                throw new ArgumentException($"In Repertoire {name}, Period must be greater than time");
+            }
+
             return new Repertoire(name, consumerFunc, consumedFunc, period, time, calculation,calculationFunc, filterFunc);
         }
     }

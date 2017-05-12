@@ -145,6 +145,7 @@ namespace tapi
                 case PeriodType.Day:
                     return TimeSpan.FromDays(1 * unit);
                 case PeriodType.Week:
+                    return TimeSpan.FromDays(7 * unit);
                 case PeriodType.Month:
                 default:
                     return TimeSpan.FromDays(30 * unit);

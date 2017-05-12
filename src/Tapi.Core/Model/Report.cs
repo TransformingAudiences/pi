@@ -61,6 +61,11 @@ namespace tapi
             var postprocess = (PostProcessType)Enum.Parse(typeof(PostProcessType), postprocessAttribute);
             var template = templateAttribute ?? "";
 
+            if((rows == ReportDimension.Period || columns ==  ReportDimension.Period) && !(rows == ReportDimension.Time || columns ==  ReportDimension.Time))
+            {
+                throw new ArgumentException($"In report {name}, Period can not be used without Time in rows, columns");
+            }
+
             return new Report(name,reportoire,from,to,rows,columns,aggregate,postprocess,format,template);
         }
     }
