@@ -86,11 +86,11 @@
                 period="Day"
                 time="DayPart"
                 consumedSource="program"
-                calculation="Volume"  />
+                calculation="Sample"  />
 
     <Repertoire name="Reach"
                 consumer="Individual.PID"
-                consumed="Channel.Name"
+                consumed="Product.Campaign"
                 period="Day"
                 time="DayPart"
                 consumedSource="spottar"
@@ -105,20 +105,18 @@
             rows ="Consumed"
             columns ="Time"
             format="Csv"
-            aggregate ="Sum"
-            postprocess="None"
+            postprocess="Average"
             template="" />
 
-      <Report name="Reach"
+      <!--<Report name="Reach"
               reportoire="Reach"
               from="2017-02-01"
               to="2017-02-01"
               rows ="Consumed"
               columns ="Time"
               format="Csv"
-              aggregate ="Sum"
-              postprocess="None"
-              template="" />
+              postprocess="Average"
+              template="" />-->
     
   </Reports>
 

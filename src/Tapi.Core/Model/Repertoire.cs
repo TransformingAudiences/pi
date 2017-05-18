@@ -86,17 +86,13 @@ namespace tapi
         Week,
         Month
     }
-    public enum AggregateType
-    {
-        Count,
-        Sum,
-        Average
-    }
     public enum PostProcessType
     {
         None,
         VolumePercentage,
-        Rank
+        Rank,
+        Total,
+        Average
     }
     public enum OutputFormat
     {

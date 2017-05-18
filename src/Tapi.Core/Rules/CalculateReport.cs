@@ -30,30 +30,19 @@ namespace tapi
                     {
                         x.Key.row,
                         x.Key.column,
-                        Value = report.Aggregeate == AggregateType.Count ? x.Count() :
-                                report.Aggregeate == AggregateType.Sum ? x.Sum(y => Math.Round(y.Value,3)) :
-                                report.Aggregeate == AggregateType.Average ? x.Average(y => y.Value) :
-                                throw new ArgumentException()
+                        Value = x.Sum(y => Math.Round(y.Value,3)) 
                     })
                     .GroupBy(x => x.row)
                     .ToDictionary(
                         x => x.Key,
                         x => x.ToDictionary(
                             y => y.column, 
-                            y => report.Aggregeate == AggregateType.Sum//&& report.Rows != ReportDimension.Period && report.Columns != ReportDimension.Period
-                             ?  report.Reportoar.Calculation == CalculationType.Frequency
-                                ? y.Value /  (report.Reportoar.Time != PeriodType.Day && report.Reportoar.Time != PeriodType.Week ? report.NbrOfDays : 1)  / 1000
-                                : y.Value / (report.Reportoar.Time != PeriodType.Day && report.Reportoar.Time != PeriodType.Week ? report.NbrOfDays : 1) / 1000 / (
-                                    report.Reportoar.Time == PeriodType.Minute ? 1 :
-                                    report.Reportoar.Time == PeriodType.Hour ? 60 : 
-                                    report.Reportoar.Time == PeriodType.DayPart ? 180 : 
-                                    report.Reportoar.Time == PeriodType.Day ? 60 * 24 : 
-                                    report.Reportoar.Time == PeriodType.Week ? 60 * 24 * 7 : 
-                                    1 )
-                             : y.Value)
+                            y => y.Value)
                     );
 
             res = report.PostProcess == PostProcessType.None ? res :
+                  report.PostProcess == PostProcessType.Total ? res :
+                  report.PostProcess == PostProcessType.Average ? TransformAverage(res, report) :
                   report.PostProcess == PostProcessType.VolumePercentage ? TransformVolumePercentage(res) :
                   report.PostProcess == PostProcessType.Rank ? TransformRank(res) :
                   throw new ArgumentException();
@@ -128,7 +117,32 @@ namespace tapi
             }
             return res;
         }
+        private Matrix TransformAverage(Matrix res, Report report)
+        {
+            if( !(report.Reportoar.Calculation == CalculationType.Volume || report.Reportoar.Calculation == CalculationType.Frequency))
+                return res;
 
+            foreach(var row in res)
+            {
+                foreach(var col in row.Value.Keys.ToList())
+                {
+                    var value = row.Value[col];
+                    value = value /  (report.Reportoar.Time != PeriodType.Day && report.Reportoar.Time != PeriodType.Week ? report.NbrOfDays : 1)  / 1000;
+                    if(report.Reportoar.Calculation == CalculationType.Volume)
+                    {
+                        var minutes =  report.Reportoar.Time == PeriodType.Minute ? 1 :
+                                    report.Reportoar.Time == PeriodType.Hour ? 60 : 
+                                    report.Reportoar.Time == PeriodType.DayPart ? 180 : 
+                                    report.Reportoar.Time == PeriodType.Day ? 60 * 24 : 
+                                    report.Reportoar.Time == PeriodType.Week ? 60 * 24 * 7 : 
+                                    1;
+                        value = value / minutes;
+                    }
+                    row.Value[col] = value;
+                }
+            }
+            return res;
+        }
         private Matrix TransformVolumePercentage(Matrix res)
         {
             var columnNames = res.SelectMany(x => x.Value.Select(y => y.Key)).Distinct().ToList();

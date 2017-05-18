@@ -14,14 +14,13 @@ namespace tapi
         public DateTime To { get; }
         public ReportDimension Rows {get;}
         public ReportDimension Columns {get;}
-        public AggregateType Aggregeate { get;  }
         public PostProcessType PostProcess { get;  }
         public OutputFormat Format { get;  }
         public string Template { get;  }
 
         public int NbrOfDays => (To - From).Days + 1;
         public string FileName => Name + (Format == OutputFormat.Xlsx ? ".xlsx" : ".csv");
-        private Report(string name, Repertoire reportoar, DateTime from, DateTime to, ReportDimension rows, ReportDimension columns, AggregateType aggregate, PostProcessType postprocess, OutputFormat format, string template)
+        private Report(string name, Repertoire reportoar, DateTime from, DateTime to, ReportDimension rows, ReportDimension columns, PostProcessType postprocess, OutputFormat format, string template)
         {
             Name = name;
             Reportoar = reportoar;
@@ -29,7 +28,6 @@ namespace tapi
             To = to;
             Rows = rows;
             Columns = columns;
-            Aggregeate = aggregate;
             PostProcess = postprocess;
             Format = format;
             Template = template;
@@ -56,7 +54,6 @@ namespace tapi
             
             var to = DateTime.ParseExact(toAttribute,"yyyy-MM-dd", CultureInfo.InvariantCulture);
             var from = DateTime.ParseExact(fromAttribute,"yyyy-MM-dd", CultureInfo.InvariantCulture);
-            var aggregate = (AggregateType)Enum.Parse(typeof(AggregateType), aggregateAttribute);
             var format = (OutputFormat)Enum.Parse(typeof(OutputFormat), formatAttribute);
             var postprocess = (PostProcessType)Enum.Parse(typeof(PostProcessType), postprocessAttribute);
             var template = templateAttribute ?? "";
@@ -66,7 +63,7 @@ namespace tapi
                 throw new ArgumentException($"In report {name}, Period can not be used without Time in rows, columns");
             }
 
-            return new Report(name,reportoire,from,to,rows,columns,aggregate,postprocess,format,template);
+            return new Report(name,reportoire,from,to,rows,columns,postprocess,format,template);
         }
     }
 }

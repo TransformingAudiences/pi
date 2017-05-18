@@ -53,19 +53,13 @@
     </xs:restriction>
   </xs:simpleType>
 
-  <xs:simpleType name="AggregateType">
-    <xs:restriction base="xs:string">
-      <xs:enumeration value="Count" />
-      <xs:enumeration value="Sum" />
-      <xs:enumeration value="Average" />
-    </xs:restriction>
-  </xs:simpleType>
-
   <xs:simpleType name="PostProcessType">
     <xs:restriction base="xs:string">
       <xs:enumeration value="None" />
       <xs:enumeration value="VolumePercentage" />
       <xs:enumeration value="Rank" />
+      <xs:enumeration value="Total" />
+      <xs:enumeration value="Average" />
     </xs:restriction>
   </xs:simpleType>
 
@@ -168,7 +162,6 @@
                   <xs:attribute name="to" type="xs:date" use="required" />
                   <xs:attribute name="rows" type="RepertoireDimensionType" />
                   <xs:attribute name="columns" type="RepertoireDimensionType" />
-                  <xs:attribute name="aggregate" type="AggregateType" />
                   <xs:attribute name="postprocess" type="PostProcessType" />
                   <xs:attribute name="template" />
                   <xs:attribute name="format" type="OutputFormat" />
